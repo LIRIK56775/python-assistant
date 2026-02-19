@@ -7,4 +7,5 @@ commands = {
     "стоп": functions.stop,
     "сайт": functions.site,
     "найди": functions.search,
+    "напиши": functions.type_text,
 }

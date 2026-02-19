@@ -2,7 +2,10 @@ from operator import index
 from aliases import aliases
 import webbrowser
 import os
+import brain
+import functions
 from actions import commands
+
 
 history = []
 
@@ -10,55 +13,44 @@ last_cannonical = None
 last_argument = None
 
 while True:
-    command = input("Что открыть ")
-    
-    command = command.strip() # удаляем пробелы в начале и конце строки
-
-    command = command.lower() # приводим все команды к одному регистру
-    
-    canonical = None
-    
-    for key in aliases:
-        for alias in aliases[key]:
-            if alias in command:
-                canonical = key
-                break
-        if canonical is not None:
-            break
-    
-    if canonical == "повтори":
-        if last_cannonical is not None and last_argument is not None:
-            commands[last_cannonical](last_argument)
+    user_input = input("Я тебя слушаю: ").strip().lower()
+    if "повтори" in user_input:
+        if last_cannonical and last_argument:
+            cmd, arg = last_cannonical, last_argument
+            print(f"Повторяю: {cmd} {arg}")
+            commands[cmd](arg)
         else:
-            print("Нет команды для повторения")
-            
-    elif canonical == "история":
-        if len(history) == 0:
-            print("История команд пуста")
+            print("Нет команды для повторения.")
+        continue
+    
+    if "история" in user_input:
+        if not history:
+            print("История команд пуста.")
         else:
             print("История команд:")
-            index = 1
-            for item in history:
-                cmd = item[0]
-                arg = item[1]
-                print(f"{index}. {cmd} {arg}")
-                index += 1
-                
-    elif canonical is not None:
-        words = command.split()
-        stop_words = ["открой", "открыть", "запусти", "запустить", "покажи", "показать", "найди", "найти", "найду", "найди мне", "найди мне", canonical,"история"]
-        filtered = []
-        for word in words:
-            if word not in stop_words:
-                filtered.append(word)
-                
-        argument = " ".join(filtered)
+            for i, item in enumerate(history, 1): # enumerate — удобный способ сделать индекс
+                print(f"{i}. {item[0]} {item[1]}")
+        continue
+    
+    if user_input in ["выход", "пока", "до свидания"]:
+        print("До связи!")
+        break
+
+    print("Обрабатываю команду...")
+    ai_data = brain.process_command(user_input)
+    cmd_name = ai_data.get("command")
+    argument = ai_data.get("argument", "")
+    message = ai_data.get("message", "")
+    if message:
+        print(f"Джарвис: {message}")
+        functions.say(message)
         
-        commands[canonical](argument)
-        last_cannonical = canonical
+    
+    if cmd_name in commands:
+        report = commands[cmd_name](argument)
+        print(f">>> {report}")
+        history.append((cmd_name, argument))
+        last_cannonical = cmd_name
         last_argument = argument
-        history.append((canonical, argument))
-        
-        
-    else:
-        print("Команда не распознана")
+    elif cmd_name == "none":
+        pass
